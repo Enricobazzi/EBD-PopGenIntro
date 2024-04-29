@@ -1,5 +1,5 @@
 # base image:
-FROM ubuntu:22.04 as learn_doker
+FROM --platform=linux/amd64 ubuntu:22.04 as learn_doker
 ARG DEBIAN_FRONTEND=noninteractive
 
 # install packages:
