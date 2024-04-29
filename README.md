@@ -8,7 +8,7 @@ Una vez instalado docker podemos proceder a descargar [esta carpeta](https://git
 
 Una vez descargada y descomprimida la colocamos en un sitio de nuestro ordenador que nos guste. A continuación vamos a tener que abrir una terminal y navegamos a la carpeta que acabamos de descomprimir con `cd`, nos bajamos la imagen del nuestro curso con `docker pull` y la corremos con `docker run`.
 
-Copiando y pegando los comandos de abajo podemos tener todo listo. Solo tendrás que cambiar la ruta a la carpeta por la de tu ordenador:
+Copiando y pegando los comandos de abajo podemos tener todo listo. Solo tenemos que cambiar la ruta a la carpeta por la de nuestro ordenador:
 
 **para Windows**
 
