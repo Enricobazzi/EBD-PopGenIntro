@@ -71,7 +71,8 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9
 WORKDIR /dependencies
 RUN wget https://github.com/broadinstitute/picard/releases/download/2.25.5/picard.jar && \
     mv picard.jar /usr/local/bin/picard.jar && \
-    echo "java -jar /usr/local/bin/picard.jar" > /usr/local/bin/picard && \
+    echo '#!/bin/bash' > /usr/local/bin/picard && \
+    echo "java -jar /usr/local/bin/picard.jar \"\$@\"" >> /usr/local/bin/picard && \
     chmod a+x /usr/local/bin/picard
 
 # install gatk 3.7 (https://storage.googleapis.com/gatk-software/package-archive/gatk/GenomeAnalysisTK-3.7-0-gcfedb67.tar.bz2):
@@ -90,12 +91,12 @@ RUN wget https://bitbucket.org/kokonech/qualimap/downloads/qualimap_v2.3.zip && 
     mv qualimap_v2.3 /usr/local/bin/qualimap_v2.3 && \
     ln -s /usr/local/bin/qualimap_v2.3/qualimap /usr/local/bin/qualimap
 
-# install gatk 4.5.0.0 (https://github.com/broadinstitute/gatk/releases/download/4.5.0.0/gatk-4.5.0.0.zip):
+# install gatk 4.2.6.1 (https://github.com/broadinstitute/gatk/releases/download/4.2.6.1/gatk-4.2.6.1.zip):
 WORKDIR /dependencies
-RUN wget https://github.com/broadinstitute/gatk/releases/download/4.5.0.0/gatk-4.5.0.0.zip && \
-    unzip gatk-4.5.0.0.zip && \
-    mv gatk-4.5.0.0 /usr/local/bin/gatk-4.5.0.0 && \
-    ln -s /usr/local/bin/gatk-4.5.0.0/gatk /usr/local/bin/gatk
+RUN wget https://github.com/broadinstitute/gatk/releases/download/4.2.6.1/gatk-4.2.6.1.zip && \
+    unzip gatk-4.2.6.1.zip && \
+    mv gatk-4.2.6.1 /usr/local/bin/gatk-4.2.6.1 && \
+    ln -s /usr/local/bin/gatk-4.2.6.1/gatk /usr/local/bin/gatk
 
 # install bcftools (https://github.com/samtools/bcftools/releases/download/1.19/bcftools-1.19.tar.bz2)
 WORKDIR /dependencies
@@ -125,12 +126,6 @@ RUN wget https://catchenlab.life.illinois.edu/stacks/source/stacks-2.66.tar.gz &
     ./configure --prefix=/usr/local && \
     make && \
     make install
-
-# install plink2 (https://www.cog-genomics.org/plink/2.0/)
-WORKDIR /dependencies
-RUN wget https://s3.amazonaws.com/plink2-assets/plink2_linux_x86_64_20240318.zip && \
-    unzip plink2_linux_x86_64_20240318.zip && \
-    mv plink2 /usr/local/bin/plink2
 
 # install plink1.9 (https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20231211.zip)
 WORKDIR /dependencies
