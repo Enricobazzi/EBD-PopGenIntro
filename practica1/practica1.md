@@ -270,15 +270,37 @@ bedtools subtract -a vcfs/LP220_LL240.vcf -b data/repetitive_regions.bed -header
 less -S vcfs/LP220_LL240.filter1.vcf
 ```
 
-### biallelic noindel
+### 2. variantes de un tipo particular que no vamos a analizar
+
+Vamos a ver un ejemplo para quedarnos con variantes bialelicas y que no sean INDELs utilizando `vcftools`:
+
+```
+vcftools --vcf vcfs/LP220_LL240.filter1.vcf \
+    --min-alleles 2 --max-alleles 2 --remove-indels \
+    --recode --recode-INFO-all \
+    --out vcfs/LP220_LL240.filter2
+
+ls -lhtr vcfs/
+ ```
+
+Una forma alternativa es usando `gatk`:
 
 ```
 gatk SelectVariants \
     -R data/reference_sequence.fa \
     -V vcfs/LP220_LL240.filter1.vcf \
-    -O vcfs/LP220_LL240.filter2.vcf \
+    -O vcfs/LP220_LL240.filter2.gatk.vcf \
     -select-type SNP \
     --restrict-alleles-to BIALLELIC
+
+grep -v "#" vcfs/LP220_LL240.filter2.gatk.vcf | wc -l
+grep -v "#" vcfs/LP220_LL240.filter2.recode.vcf | wc -l
+```
+
+### 3. variantes con algún valor cualitativo que no queremos
+
+```
+
 ```
 
 ### variant
