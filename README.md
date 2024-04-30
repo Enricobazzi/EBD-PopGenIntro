@@ -28,4 +28,4 @@ docker run -it -v /path/to/your/folder:/root enricobazzi/ebd-popgenintro:v2-amd6
 
 Otra cosa que vamos a necesitar es un editor de código. Aconsejamos para este curso [Rstudio](https://posit.co/download/rstudio-desktop/), ya que nos va a permitir leer los markdown donde están escritos los comandos de las practicas y correr los scripts de R de forma interactiva.
 
-Los paquetes de R necesarios para correr los scripts de R de esta practica están en el file [](). Ejecutando ese script o copiando su contenido en una terminal de R nos instalaremos todos los paquetes necesarios a analizar los datos y visualizar los resultados de las diferentes practicas.
+Los paquetes de R necesarios para correr los scripts de R de esta practica están en el file [installation_packages.R](practica3/installation_packages.R) de la carpeta practica3. Ejecutando ese script o copiando su contenido en una terminal de R nos instalaremos todos los paquetes necesarios a analizar los datos y visualizar los resultados de las diferentes practicas.
