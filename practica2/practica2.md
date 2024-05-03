@@ -12,7 +12,7 @@ Hemos alineado nuestras lecturas al genoma de referencia, y llamado las variante
 # vamos a la carpeta de la practica
 cd practica2
 
-# declaramos el vcf como una variable
+# declaramos el vcf como una variable
 VCF=data/data1.vcf
 
 # echamos un ojo por encima al vcf
@@ -29,7 +29,7 @@ grep -m1 "#CHROM" $VCF | cut -f10- | tr "\t" " "
 
 Y para saber cuantos SNPs tenemos en nuestro VCF:
 
-```
+``` 
 grep -v "#" $VCF | wc -l
 ```
 
@@ -38,7 +38,7 @@ grep -v "#" $VCF | wc -l
 Si queremos explorar como están relacionados nuestros individuos, podemos empezar por una PCA basada en sus genotipos.
 
 ```
-mkdir pca
+mkdir -m 777 pca
 ```
 
 El programa [Plink](https://www.cog-genomics.org/plink/) nos ofrece una opción muy facil para realizar una PCA a partir de nuestro VCF.
@@ -122,7 +122,7 @@ pc2pc3 <- ggplot() +
   xlab(paste0("PC2 - ", round(percents[2], 2), "%")) +
   ylab(paste0("PC3 - ", round(percents[3], 2), "%")) +
   theme_bw()
-ggsave(filename = "pca/data1.pc2pc3_plot.pdf", plot = pc1pc2)
+ggsave(filename = "pca/data1.pc2pc3_plot.pdf", plot = pc2pc3)
 
 ```
 
@@ -143,7 +143,7 @@ Ahora podemos correr ADMIXTURE con diferentes valores de K. Utilizamos [--cv]()
 
 ```
 # creamos una carpeta para guardar los resultados de admixture
-mkdir admixture 
+mkdir -m 777 admixture 
 cd admixture
 
 # corremos admixture de K=1 a K=8
@@ -189,7 +189,7 @@ Diferentes criterios se pueden usar para determinar el mejor numero de K. De los
 
 *La información sobre la biología de la especie es importante!*
 
-Ploteamos como nuestras muestras se dividirían con K=2, K=3 y K=4:
+Ploteamos como nuestras muestras se dividirían con diferentes valores de K:
 
 ```{r}
 library(ggplot2)
@@ -222,7 +222,7 @@ for (k in 2:8){
 Ahora que hemos identificado las poblaciones podemos proceder a calcular algunos estadisticos de diversidad para ellas.
 
 ```
-mkdir stats
+mkdir -m 777 stats
 ```
 
 Primero vamos a dividir el VCF por población y luego usamos las funciones `--window-pi` y `--TajimaD` indicando el tamaño del cromosoma entero para mirar los valores de estos estadisticos dentro de cada una.
@@ -235,10 +235,10 @@ for pop in A B C D; do
         --recode --out data/data1.population_${pop}
 
     vcftools --vcf data/data1.population_${pop}.recode.vcf \
-        --window-pi 20000000 --out stats/population_${pop}_pi_20Mb
+        --window-pi 10000000 --out stats/population_${pop}_pi_20Mb
     
     vcftools --vcf data/data1.population_${pop}.recode.vcf \
-        --TajimaD 20000000 --out stats/population_${pop}_tajimaD_20Mb
+        --TajimaD 10000000 --out stats/population_${pop}_tajimaD_20Mb
 done
 ```
 
@@ -317,7 +317,6 @@ tdplot <- ggplot(diversity_table,
     xlab("Population") + ylab("Tajima's D") +
     theme_bw()
 ggsave(filename = "stats/data1.tdplot.pdf", plot = tdplot)
-
 ```
 
 ## Análisis de tamaño efectivo
@@ -330,13 +329,13 @@ vcftools --vcf $VCF --maf 0.001 --keep data/population_A.txt \
 
 VCF=data/data1.big.population_A.recode.vcf
 
-mkdir gone
+mkdir -m 777 gone
 
 plink --vcf $VCF \
     --recode \
-    --out ../GONE-Linux/data1.big.population_A
+    --out GONE-Linux/data1.big.population_A
 
-cd ../GONE-Linux
+cd GONE-Linux
 chmod +x PROGRAMMES/*
 bash script_GONE.sh data1.big.population_A
 ```

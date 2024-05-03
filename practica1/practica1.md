@@ -31,7 +31,7 @@ Vamos a usar Fastqc para obtener un informe de calidad de nuestras lecturas:
 
 ```
 # creamos una carpeta para guardar los resultados
-mkdir fastqc
+mkdir -m 777 fastqc
 
 # corremos fastqc para cada file de lecturas
 fastqc data/LL240.R1.fq.gz -o fastqc
@@ -49,7 +49,7 @@ Vamos a correr fastp sobre nuestras lecturas con unos objetivos comunes en los p
 - eliminación de cadenas de poly-g
 
 ```
-mkdir fastp
+mkdir -m 777 fastp
 
 fastp --help
 
@@ -81,12 +81,12 @@ fastqc data/LP220.R1.fastp.fq.gz data/LP220.R2.fastp.fq.gz -o fastqc
 fastqc data/LL240.R1.fastp.fq.gz data/LL240.R2.fastp.fq.gz -o fastqc
 ```
 
-## Alinemiento
+## Alineamiento
 
 Creamos una carpeta donde guardar nuestros alineamientos:
 
 ```
-mkdir bams
+mkdir -m 777 bams
 ```
 
 Vamos a echarle un vistazo a nuestro genoma de referencia:
@@ -101,9 +101,9 @@ Como los genomas de referencia son muy grandes, los algoritmos de alineamiento n
 ```
 # indice para BWA
 bwa index data/reference_sequence.fa
-# indice general
+# indice general
 samtools faidx data/reference_sequence.fa
-# diccionario para gatk
+# diccionario para gatk
 samtools dict data/reference_sequence.fa -o data/reference_sequence.dict
 ```
 
@@ -182,9 +182,13 @@ picard AddOrReplaceReadGroups \
 samtools view -H bams/LP220.sorted.rg.bam
 samtools view -H bams/LL240.sorted.rg.bam
 ```
+
+IGV
+
+
 ----
 ```
-mkdir qualimap
+mkdir -m 777 qualimap
 
 qualimap bamqc \
   -bam bams/LP220.sorted.rg.bam \
@@ -201,12 +205,12 @@ qualimap bamqc \
 ```
 ----
 
-## Calling
+## Llamada de variantes
 
 Utilizaremos GATK para generar un file .g.vcf para cada uno de nuestros individuos usando el flag `-ERC GVCF`:
 
 ```
-mkdir vcfs
+mkdir -m 777 vcfs
 
 # SUPER SLOW!
 samtools index bams/LP220.sorted.rg.bam
@@ -239,13 +243,17 @@ gatk CombineGVCFs \
     --variant vcfs/LL240.g.vcf \
     -O vcfs/LP220_LL240.g.vcf
 
+less -S vcfs/LP220_LL240.g.vcf
+
 gatk GenotypeGVCFs \
     -R data/reference_sequence.fa \
     -V vcfs/LP220_LL240.g.vcf \
     -O vcfs/LP220_LL240.vcf
+
+less -S vcfs/LP220_LL240.vcf
 ```
 
-## Filtering
+## Filtrado de variantes
 
 Ahora que tenemos el VCF con nuestras variantes, podemos proceder a varios pasos de filtrado para eliminar las que no nos interesan.
 
@@ -253,7 +261,7 @@ Hay diferentes formas de filtrar los datos, que dependen del criterio que queram
 
 1. variantes en regiones del genoma que no nos interesan (e.g. baja complejidad, paralogos, genes)
 2. variantes de un tipo particular que no vamos a analizar (e.g. INDELs, no-bialelicas, fijadas)
-3. variantes con algún valor cualitativo que no queremos (e.g. calidad, missing data, profundidad, heterozigosidad, hardy-weinberg)
+3. variantes con algún valor cuantitativo que no queremos (e.g. calidad, missing data, profundidad, heterozigosidad, hardy-weinberg)
 
 ### 1. variantes en regiones del genoma que no nos interesan 
 
@@ -297,45 +305,110 @@ grep -v "#" vcfs/LP220_LL240.filter2.gatk.vcf | wc -l
 grep -v "#" vcfs/LP220_LL240.filter2.recode.vcf | wc -l
 ```
 
-### 3. variantes con algún valor cualitativo que no queremos
+### 3. variantes con algún valor cuantitativo que no queremos
+
+Un ejemplo claro de valor de una variante que puede no interesarnos es su frecuencia alelica. Si una variante está a frecuencia 1.00 en nuestra base de datos, quiere decir que no hay variación entre nuestros individuos y esta variante no será informativa. Para ver cuantas variantes a frecuencia 1.00 tenemos podemos utilizar `bcftools view`, con `-i` para incluir, y luego especificar que en la columna INFO queremos las que tengan AF=1.00:
 
 ```
-
+# cuenta el numero de SNPs con AF=1
+bcftools view -i 'INFO/AF=1.00' vcfs/LP220_LL240.filter2.recode.vcf | grep -v "#" | wc -l
 ```
 
-### variant
+Para eliminarlos podemos usar `bcftools view` pero ahora con `-e` para excluir los que tengan AF=1:
 
 ```
-bcftools view -e 'INFO/AF=1.00' vcfs/LP220_LL240.filter2.vcf > vcfs/LP220_LL240.filter3.vcf
+bcftools view -e 'INFO/AF=1.00' vcfs/LP220_LL240.filter2.recode.vcf > vcfs/LP220_LL240.filter3.vcf
+
+less -S vcfs/LP220_LL240.filter3.vcf
 ```
 
-### quality scores
+Otras veces queremos eliminar los SNPs que tengan un valor por encima o por debajo de un umbral. Para decidir que valores tienen que tener esos umbrales puede ayudar dibujar su distribucción. Vamos a ver un ejemplo extrayendo los valores de [QD](https://gatk.broadinstitute.org/hc/en-us/articles/360037592191-QualByDepth) y [DP](https://gatk.broadinstitute.org/hc/en-us/articles/13832711528603-Coverage) de todos nuestros SNPs y luego vamos a decidir los umbrales a aplicar al filtrado basados en sus distribuciones.
+
+Empezamos con extraer estos dos valores a una tabla:
 
 ```
-# look at distributions first?
+# creamos la tabla con su cabecero
+echo -e "QD\tDP" > qd_dp.table.tsv
 
-bcftools view -e 'INFO/MQRankSum < -12.5 | INFO/ReadPosRankSum < -8.0 | INFO/QD < 6.0 | INFO/FS > 60.0 | INFO/MQ < 40.0' \
-    vcfs/LP220_LL240.filter3.vcf > vcfs/LP220_LL240.filter4.vcf
+# pegamos los valores de QD y DP extrayendolos del vcf directamente y los añadimos a la tabla
+paste \
+    <(grep -v "#" vcfs/LP220_LL240.filter3.vcf | cut -f8 | grep -o 'QD=[0-9.]\+' | cut -d'=' -f2) \
+    <(grep -v "#" vcfs/LP220_LL240.filter3.vcf | cut -f8 | grep -o 'DP=[0-9.]\+' | cut -d'=' -f2) \
+    >> qd_dp.table.tsv
+
+less -S qd_dp.table.tsv
 ```
 
-### read depth
+En R podemos dibujar sus distribuciones y extraer los valores limite para el filtrado:
 
-mosdepth?
+```{r}
+library(ggplot2)
+qd_dp.table <- read.table("qd_dp.table.tsv", header = TRUE)
 
+# que valor de QD está debajo de su media - 2 veces su desviación estandar?
+qd_lim <- mean(qd_dp.table$QD) - 2 * sd(qd_dp.table$QD)
+
+# vamos a visualizarlo
+qd_plot <- ggplot() +
+  geom_histogram(data = qd_dp.table, aes(x = QD), bins = 100) +
+  scale_x_continuous(breaks = 0:42*2) +
+  geom_vline(xintercept = qd_lim, linetype = "dashed",
+             colour = "red", size = 0.3) +
+  theme_bw()
+ggsave(filename = "qd_plot.pdf", plot = qd_plot)
+
+# cuantos SNPs filtramos si aplicamos este valor como limite?
+qd_filter <- qd_dp.table[which(qd_dp.table$QD <= qd_lim), ]
+nrow(qd_filter)
+
+####
+
+# que valor de DP está por encima de 2 veces su mediana?
+dp_lim <- 2 * median(qd_dp.table$DP)
+
+# vamos a visualizarlo
+dp_plot <- ggplot() +
+  geom_histogram(data = qd_dp.table, aes(x = DP), bins = 100) +
+  scale_x_continuous(breaks = 0:300*20, limits = c(0, 300)) +
+  geom_vline(xintercept=dp_lim, linetype="dashed", colour="red", size=0.3) +
+  theme_bw()
+ggsave(filename = "dp_plot.pdf", plot = dp_plot)
+
+
+# cuantos SNPs filtramos si aplicamos este valor como limite?
+dp_filter <- qd_dp.table[which(qd_dp.table$DP <= dp_lim), ]
+nrow(dp_filter)
+
+####
+
+# escribimos una tabla para guardar estos limites:
+limits <- data.frame(QD_limit = qd_lim, DP_limit = dp_lim)
+write.table(limits, file = "qd_dp.limits.tsv",
+            row.names = FALSE, sep = "\t", quote = FALSE)
 ```
 
-```
-
-### Final summary of calling and filtering
-
-nvariants and missing data
+Para aplicar estos filtros podemos utilizar de nuevo `bcftools view -e` leyendo los valores limite en la tabla que hemos generado:
 
 ```
-bcftools view -e '' # missing data proportion
+qd_lim=$(cut -f1 qd_dp.limits.tsv | tail -1)
+dp_lim=$(cut -f2 qd_dp.limits.tsv | tail -1)
+
+bcftools view -e "INFO/QD < ${qd_lim} | INFO/DP > ${dp_lim}" vcfs/LP220_LL240.filter3.vcf > vcfs/LP220_LL240.filter4.vcf
+
+grep -v "#" vcfs/LP220_LL240.filter3.vcf | wc -l
+grep -v "#" vcfs/LP220_LL240.filter4.vcf | wc -l
 ```
 
-### Other common filtering
+Bcftools tiene también una opción para eliminar variantes con missing data. Podemos excluir todas las variantes con más del X% de missing data o con missing data en mas de N individuos de la siguiente forma:
 
-hardy weinberg
-heterozygosity
-genes
+```
+# eliminamos lo que tenga missing data en el 10% de individuos:
+bcftools view -e 'F_MISSING > 0.1' vcfs/LP220_LL240.filter4.vcf > vcfs/LP220_LL240.filter5.f_missing.vcf
+# o en 1 o más individuos
+bcftools view -e 'N_MISSING >= 1' vcfs/LP220_LL240.filter4.vcf > vcfs/LP220_LL240.filter5.n_missing.vcf
+
+grep -v "#" vcfs/LP220_LL240.filter5.f_missing.vcf | wc -l
+grep -v "#" vcfs/LP220_LL240.filter5.n_missing.vcf | wc -l
+```
+
+En nuestra base de datos solo tenemos dos individuos, pero en bases de datos más amplias los umbrales de missing data se podrían calcular de forma empirica como hemos hecho para el QD o el DP
