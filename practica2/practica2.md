@@ -322,6 +322,8 @@ ggsave(filename = "stats/data1.tdplot.pdf", plot = tdplot)
 ## Análisis de tamaño efectivo
 
 ```
+chmod +x GONE-Linux/PROGRAMMES/*
+
 VCF=data/data1.big.vcf
 
 vcftools --vcf $VCF --maf 0.001 --keep data/population_A.txt \
@@ -329,13 +331,69 @@ vcftools --vcf $VCF --maf 0.001 --keep data/population_A.txt \
 
 VCF=data/data1.big.population_A.recode.vcf
 
-mkdir -m 777 gone
-
 plink --vcf $VCF \
     --recode \
     --out GONE-Linux/data1.big.population_A
 
 cd GONE-Linux
-chmod +x PROGRAMMES/*
+
 bash script_GONE.sh data1.big.population_A
+
+
+################################################
+
+VCF=data/data1.big.vcf
+
+vcftools --vcf $VCF --maf 0.001 --keep data/population_B.txt \
+    --recode --out data/data1.big.population_B
+
+VCF=data/data1.big.population_B.recode.vcf
+
+plink --vcf $VCF \
+    --recode \
+    --out GONE-Linux/data1.big.population_B
+
+cd GONE-Linux
+
+bash script_GONE.sh data1.big.population_B
+
+################################################
+
+VCF=data/data1.big.vcf
+
+vcftools --vcf $VCF --maf 0.001 --keep data/population_C.txt \
+    --recode --out data/data1.big.population_C
+
+VCF=data/data1.big.population_C.recode.vcf
+
+plink --vcf $VCF \
+    --recode \
+    --out GONE-Linux/data1.big.population_C
+
+cd GONE-Linux
+
+bash script_GONE.sh data1.big.population_C
+
+```
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+
+popA <- read.table("GONE-Linux/Output_Ne_data1.big.population_A",
+                   skip = 1, header = TRUE)
+
+ggplot() +
+  geom_step(data = popA %>% filter(Generation <= 150),
+            aes(x = Generation, y = Geometric_mean))
+```
+
+```{r}
+
+popB <- read.table("GONE-Linux/Output_Ne_data1.big.population_B",
+                   skip = 1, header = TRUE)
+
+ggplot() +
+  geom_step(data = popB %>% filter(Generation <= 150),
+            aes(x = Generation, y = Geometric_mean))
 ```
