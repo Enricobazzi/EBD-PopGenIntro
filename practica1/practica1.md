@@ -107,6 +107,14 @@ samtools faidx data/reference_sequence.fa
 samtools dict data/reference_sequence.fa -o data/reference_sequence.dict
 ```
 
+- .amb es un file de texto, registra las N y otros caracteres que no sean ATGC
+- .ann es un file de texto, registra las secuencias de referencia (contig/scaffolds/cromosomas), sus nombres, longitud etc.
+- .bwt es un file binario, contiene la secuencia transformada por el algoritmo Burrows-Wheeler
+- .pac es un file binario, contiene la secuencia enpaquetada
+- .sa es un file binario, indice de la collección de sufijos (de la matriz de la secuencia transformada)
+- .fai es un file de texto, contiene  la información sobre el genoma de referencia en 5 columnas (nombre, longitud, offset, bases por linea y bytes por linea)
+- .dict es un file de texto, parecido a un cabecero de un SAM, contiene información sobre el genóma de referencia
+
 Con los indices listos y nuestras secuencias limpias podemos proceder al alineamiento con BWA-MEM
 
 ```
