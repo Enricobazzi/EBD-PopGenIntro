@@ -8,6 +8,8 @@ Una vez instalado docker podemos proceder a descargar [esta carpeta](https://git
 
 Los datos que vamos a utilizar para las prácticas están disponibles para su descarga en [este enlace](https://saco.csic.es/index.php/s/Y9yw8XjJakc2gQY).
 
+Los datos Radseq están en este enlace: https://uses0-my.sharepoint.com/:f:/g/personal/lorlorfer_alum_us_es/EkvAl_hJ6ItHiHEbn67uIhcB2zAOJwHDS9nBNb7Wa4iUjw?e=JkVaXy
+
 Una vez descargada y descomprimida la colocamos en un sitio de nuestro ordenador que nos guste. A continuación vamos a tener el programa de docker abierto a la vez que abrimos una terminal (o símbolo de sistema en Windows). Ahora nos podemos bajar la imagen del nuestro curso con `docker pull` y la corremos con `docker run`.
 
 Copiando y pegando los comandos de abajo podemos tener todo listo. Solo tenemos que cambiar la ruta a la carpeta del curso por la de nuestro ordenador:
