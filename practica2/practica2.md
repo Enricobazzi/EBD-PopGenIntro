@@ -321,60 +321,69 @@ ggsave(filename = "stats/data1.tdplot.pdf", plot = tdplot)
 
 ## Análisis de tamaño efectivo
 
+Todo el software de GONE está contenido en la carpeta GONE-Linux. Para que pueda correr el programa tenemos que dar permiso de ejecución a todos los scripts dentro de su carpeta PROGRAMMES
+
 ```
 chmod +x GONE-Linux/PROGRAMMES/*
+```
 
+Ahora, como vamos a correr el análisis en cada población del VCF, tenemos que extraer los individuos de `data1.big.vcf` creando un nuevo VCF para cada población:
+
+```
 VCF=data/data1.big.vcf
 
-vcftools --vcf $VCF --maf 0.001 --keep data/population_A.txt \
-    --recode --out data/data1.big.population_A
+for pop in A B C D; do
+    # creo una lista de individuos de la población
+    grep -m1 "#CHROM" $VCF | cut -f10- | tr "\t" "\n" | grep "${pop}" > data/population_big_${pop}.txt
+    
+    # uso vcftools para escribir un VCF de la población
+    vcftools --vcf $VCF --maf 0.001 --keep data/population_big_${pop}.txt \
+        --recode --out data/data1.big.population_${pop}
+done
+```
 
-VCF=data/data1.big.population_A.recode.vcf
+Gone quiere que los datos estén en el formato PED/MAP de PLINK. Podemos convertir el VCF en un loop de nuevo:
 
-plink --vcf $VCF \
-    --recode \
-    --out GONE-Linux/data1.big.population_A
+```
+for pop in A B C D; do
+    plink --vcf data/data1.big.population_${pop}.recode.vcf \
+        --recode \
+        --out GONE-Linux/data1.big.population_${pop}
+done
+```
 
+Antes de correr GONE, tenemos que poner los parametros que queremos en el file `INPUT_PARAMETERS_FILE` de su carpeta. Vamos a verlo y vamos a cambiar los parametros a:
+
+########################################################
+PHASE=2 ### Phase = 0 (pseudohaploids), 1 (known phase), 2 (unknown phase)
+cMMb=1  ### CentiMorgans per Megabase (if distance is not available in map file).
+DIST=1  ### none (0), Haldane correction (1) or Kosambi correction (2)
+NGEN=2000 ### Number of generations for which linkage data is obtained in bins
+NBIN=400  ### Number of bins (e.g. if 400, each bin includes NGEN/NBIN = 2000/400 = 5 generations)
+MAF=0.0   ### Minor allele frequency (0-1) (recommended 0)
+ZERO=1    ### 0: Remove SNPs with zeroes (1: allow for them)
+maxNCHROM=-99  ### Maximum number of chromosomes to be analysed (-99 = all chromosomes; maximum number is 200)
+maxNSNP=10000 ### Maximum approx number of SNPs per chromosomes to be analysed (maximum number is 50000)
+hc=0.05   ### Maximum value of c analysed (recommended 0.05; maximum is 0.5)
+REPS=40   ### Number of replicates to run GONE (recommended 40)
+threads=-99  ### Number of threads (if -99 it uses all possible processors)
+###################################################################
+
+Ahora que tenemos todo podemos correr GONE para cada población yendo a la carpeta de GONE y corriendo el script `script_GONE.sh` pasandole el nombre del file PED/MAP con los datos por analizar:
+
+```
 cd GONE-Linux
 
 bash script_GONE.sh data1.big.population_A
 
-
-################################################
-
-VCF=data/data1.big.vcf
-
-vcftools --vcf $VCF --maf 0.001 --keep data/population_B.txt \
-    --recode --out data/data1.big.population_B
-
-VCF=data/data1.big.population_B.recode.vcf
-
-plink --vcf $VCF \
-    --recode \
-    --out GONE-Linux/data1.big.population_B
-
-cd GONE-Linux
-
 bash script_GONE.sh data1.big.population_B
-
-################################################
-
-VCF=data/data1.big.vcf
-
-vcftools --vcf $VCF --maf 0.001 --keep data/population_C.txt \
-    --recode --out data/data1.big.population_C
-
-VCF=data/data1.big.population_C.recode.vcf
-
-plink --vcf $VCF \
-    --recode \
-    --out GONE-Linux/data1.big.population_C
-
-cd GONE-Linux
 
 bash script_GONE.sh data1.big.population_C
 
+bash script_GONE.sh data1.big.population_D
 ```
+
+Tardará un poco a generar los resultados. Una vez terminado puedo plotear el tamaño efectivo a lo largo del tiempo a partir del file de salida `Output_Ne` generado por GONE:
 
 ```{r}
 library(ggplot2)
@@ -384,7 +393,7 @@ popA <- read.table("GONE-Linux/Output_Ne_data1.big.population_A",
                    skip = 1, header = TRUE)
 
 ggplot() +
-  geom_step(data = popA %>% filter(Generation <= 150),
+  geom_step(data = popA %>% filter(Generation <= 100),
             aes(x = Generation, y = Geometric_mean))
 ```
 
@@ -394,6 +403,24 @@ popB <- read.table("GONE-Linux/Output_Ne_data1.big.population_B",
                    skip = 1, header = TRUE)
 
 ggplot() +
-  geom_step(data = popB %>% filter(Generation <= 150),
+  geom_step(data = popB %>% filter(Generation <= 100),
+            aes(x = Generation, y = Geometric_mean))
+```
+
+```{r}
+popC <- read.table("GONE-Linux/Output_Ne_data1.big.population_C",
+                   skip = 1, header = TRUE)
+
+ggplot() +
+  geom_step(data = popC %>% filter(Generation <= 100),
+            aes(x = Generation, y = Geometric_mean))
+```
+
+```{r}
+popD <- read.table("GONE-Linux/Output_Ne_data1.big.population_D",
+                   skip = 1, header = TRUE)
+
+ggplot() +
+  geom_step(data = popD %>% filter(Generation <= 100),
             aes(x = Generation, y = Geometric_mean))
 ```
