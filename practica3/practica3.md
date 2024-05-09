@@ -254,6 +254,18 @@ de datos de ensembl, por eso lo que vamos a hacer es guardar todos estos
 datos en un dataframe para que en caso de que no hayamos podido
 generarlos podamos utilizarlos igual.*
 
+``` r
+#####Get annotation from ensembl.org#####
+
+#download from ensembl.org every felcat ensembl ID:
+ensembl <- useMart("ensembl", dataset = "fcatus_gene_ensembl")
+
+#extract the GOterms for every ensembl_id
+ensembl_to_go <- getBM(attributes = c("ensembl_gene_id", "external_gene_name", "go_id"), mart = ensembl)
+
+write.table(ensembl_to_go, file="data/felcat_annotation.csv", sep=",", row.names = F)
+```
+
 Por tanto, si no hemos podido generar esa tabla con la información de la
 anotación del gato, podemos cargarla directamente ya que está disponible
 en los datos de la práctica 3 como `felcat_annotation.csv`.

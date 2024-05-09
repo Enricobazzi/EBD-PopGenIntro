@@ -212,7 +212,7 @@ Para este ejercicio, supondremos que tenemos una lista de genes candidatos en li
 
 *Tened en cuenta que en los ordenadores del LAST, por la versión de R que manejan, no permiten usar el paquete bioMart para acceder a la base de datos de ensembl, por eso lo que vamos a hacer es guardar todos estos datos en un dataframe para que en caso de que no hayamos podido generarlos podamos utilizarlos igual.*
 
-```{r felcat_ensembl, include=FALSE}
+```{r felcat_ensembl, eval=FALSE}
 #####Get annotation from ensembl.org#####
 
 #download from ensembl.org every felcat ensembl ID:
@@ -222,46 +222,6 @@ ensembl <- useMart("ensembl", dataset = "fcatus_gene_ensembl")
 ensembl_to_go <- getBM(attributes = c("ensembl_gene_id", "external_gene_name", "go_id"), mart = ensembl)
 
 write.table(ensembl_to_go, file="data/felcat_annotation.csv", sep=",", row.names = F)
-```
-
-```{r create_candidate_genes, eval=FALSE, include=FALSE}
-###In this chunk I am going to invent my candidate gene list in several steps. This is not going to be printed in the knited md
-
-# Define the desired GO IDs, that is, the GO terms I'm interested in (inmune system-defend to pathogens)
-desired_GO_IDs <- c("GO:0016045", "GO:0051607", "GO:0045058")
-
-# Initialize a vector to store the selected gene names
-selected_genes <- c()
-
-# Loop through each desired GO ID
-for (desired_GO_ID in desired_GO_IDs) {
-  # Get gene names associated with the current desired GO ID
-  genes_with_desired_GO <- names(go_list)[sapply(go_list, function(x) desired_GO_ID %in% x)]
-  
-  # Append the gene names to the selected_genes vector
-  selected_genes <- c(selected_genes, genes_with_desired_GO)
-}
-
-# Remove duplicates in case a gene is associated with multiple desired GO IDs
-selected_genes <- unique(selected_genes)
-
-# Set the seed for reproducibility
-set.seed(123)
-
-# Define the number of gene names to select randomly
-num_genes_to_select <- 10  # Adjust as needed
-
-# Randomly sample gene names from the selected gene names
-randomly_selected_genes <- sample(selected_genes, num_genes_to_select, replace = TRUE)
-
-#From the total list of genes (every gene in go_list), I want to extract a random subset
-randomly_nonselected_genes <- sample(names(go_list), 100)
-
-#Finally, my candidates genes will be a mix of randomly selected from the total genes present in the felcat annotation and some of my desired genes (those related with inmune response)
-genes <- c(randomly_selected_genes, randomly_nonselected_genes)
-
-#Save the list
-write.csv(genes, "data/candidate_genes.csv")
 ```
 
 Por tanto, si no hemos podido generar esa tabla con la información de la anotación del gato, podemos cargarla directamente ya que está disponible en los datos de la práctica 3 como `felcat_annotation.csv`.
@@ -308,4 +268,3 @@ result_table <- GenTable(godata, Fisher=over_test, topNodes=over_test@geneData[2
 ```{r echo=FALSE}
 knitr::kable(result_table)
 ```
-
