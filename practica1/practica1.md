@@ -1,8 +1,13 @@
 # Obtención de un dataset de Variantes a partir de datos de Secuenciación - WGS
 
+Los datos que vamos a utilizar para las prácticas están disponibles para su descarga en [este enlace](https://saco.csic.es/index.php/s/Y9yw8XjJakc2gQY) dentro de la carpeta practica1. Los descargamos y los colocamos dentro de una carpeta que llamamos `data` dentro de la carpeta practica1:
+```
+mkdir -m 777 practica1/data
+```
+
 ## Ficheros Fastq
 
-Tenemos unos [fastq](https://knowledge.illumina.com/software/general/software-general-reference_material-list/000002211) que queremos analizar. Están guardados en la carpeta `data` del directorio de esta practica:
+Tenemos unos [fastq](https://knowledge.illumina.com/software/general/software-general-reference_material-list/000002211) que queremos analizar. Los hemos guardado en la carpeta `data` del directorio de esta practica:
 
 ```
 cd practica1

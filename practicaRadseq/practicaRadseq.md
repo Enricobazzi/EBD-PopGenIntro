@@ -5,6 +5,8 @@ Mari Jose
 
 # Análisis de RADseq usando STACKS
 
+Los datos que vamos a utilizar para las prácticas están disponibles para su descarga en [este enlace](https://saco.csic.es/index.php/s/Y9yw8XjJakc2gQY) dentro de la carpeta practicaRadseq. Los descargamos y los colocamos dentro de la carpeta de practicaRadseq.
+
 ## Objetivos
 
 El objetivo de este ejercicio es familiarizar a los estudiantes con el
