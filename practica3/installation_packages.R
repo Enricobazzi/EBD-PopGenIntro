@@ -1,4 +1,5 @@
 #Packages needed for the practical lesson
+install.packages("ggpubr")
 install.packages("vcfR")
 install.packages("rehh")
 install.packages("ggplot2")
