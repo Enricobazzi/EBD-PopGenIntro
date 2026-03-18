@@ -4,9 +4,9 @@
 
 Los scripts que vamos a correr para este curso necesitan muchas dependencias. La forma más sencilla de instalarlas todas es usando docker. Esto se puede conseguir bajando e instalando [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
-Una vez instalado docker podemos proceder a descargar [esta carpeta](https://github.com/Enricobazzi/EBD-PopGenIntro/archive/refs/heads/main.zip) de github que contiene todo el material del curso.
+Una vez instalado docker podemos proceder a descargar [esta carpeta](https://github.com/Enricobazzi/EBD-PopGenIntro/archive/refs/heads/main.zip) de github que contiene los scripts del curso. También descargaremos los datos que usaremos para las prácticas y que están almacenados en [esta carpeta de SACO](https://saco.csic.es/s/Y9yw8XjJakc2gQY).
 
-Una vez descargada y descomprimida la colocamos en un sitio de nuestro ordenador que nos guste. A continuación vamos a tener el programa de docker abierto a la vez que abrimos una terminal (o símbolo de sistema en Windows). Ahora nos podemos bajar la imagen del nuestro curso con `docker pull` y la corremos con `docker run`.
+Una vez descargada y descomprimida la carpeta de github, la colocamos en un sitio de nuestro ordenador que nos guste y colocaremos los datos de cada práctica dentro de la carpeta "data" de la práctica correspondiente (practica1/data, practica2/data, practica3/data). A continuación vamos a tener el programa de docker abierto a la vez que abrimos una terminal (o símbolo de sistema en Windows). Ahora nos podemos bajar la imagen del nuestro curso con `docker pull` y la corremos con `docker run`.
 
 Copiando y pegando los comandos de abajo podemos tener todo listo. Solo tenemos que cambiar la ruta a la carpeta del curso por la de nuestro ordenador:
 
