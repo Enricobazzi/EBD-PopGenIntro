@@ -65,7 +65,7 @@ fastp \
     --unpaired1 data/LL240.R1.unpaired.fq.gz --unpaired2 data/LL240.R2.unpaired.fq.gz \
     --failed_out data/LL240.R1.failed.fq.gz \
     --trim_poly_g \
-    --length_required 30 \
+    --length_required 50 \
     --correction \
     --detect_adapter_for_pe
 
@@ -76,7 +76,7 @@ fastp \
     --unpaired1 data/LP220.R1.unpaired.fq.gz --unpaired2 data/LP220.R2.unpaired.fq.gz \
     --failed_out data/LP220.R1.failed.fq.gz \
     --trim_poly_g \
-    --length_required 30 \
+    --length_required 50 \
     --correction \
     --detect_adapter_for_pe
 ```
@@ -110,6 +110,8 @@ bwa index data/reference_sequence.fa
 samtools faidx data/reference_sequence.fa
 # diccionario para gatk
 samtools dict data/reference_sequence.fa -o data/reference_sequence.dict
+
+ls data/reference_sequence.*
 ```
 
 - .amb es un file de texto, registra las N y otros caracteres que no sean ATGC
@@ -123,12 +125,14 @@ samtools dict data/reference_sequence.fa -o data/reference_sequence.dict
 Con los indices listos y nuestras secuencias limpias podemos proceder al alineamiento con BWA-MEM
 
 ```
+# ~8 minutes
 bwa mem \
     data/reference_sequence.fa \
     data/LP220.R1.fastp.fq.gz \
     data/LP220.R2.fastp.fq.gz |
     samtools view -hbS - -o bams/LP220.bam
 
+# ~8 minutes
 bwa mem \
     data/reference_sequence.fa \
     data/LL240.R1.fastp.fq.gz \
@@ -150,6 +154,7 @@ Muchos de los programas que usaremos para seguir tratando nuestros datos asumen 
 Para ordenar nuestras lecturas alineadas en el mismo orden de las posiciones del genoma de referencia podemos usar `samtools sort`:
 
 ```
+# ~50 segundos
 samtools sort bams/LP220.bam -o bams/LP220.sorted.bam
 samtools sort bams/LL240.bam -o bams/LL240.sorted.bam
 
@@ -164,31 +169,33 @@ https://broadinstitute.github.io/picard/command-line-overview.html#AddOrReplaceR
 https://gatk.broadinstitute.org/hc/en-us/articles/360037226472-AddOrReplaceReadGroups-Picard
 
 Las informaciónes que vamos a añadir al grupo de lectura serán:
-- RGID: Read-Group ID
+- RGSM: Read-Group sample name
 - RGLB: Read-Group library
 - RGPL: Read-Group platform
 - RGPU: Read-Group platform unit (eg. run barcode)
-- RGSM: Read-Group sample name
+- RGID: Read-Group ID
 
 ```
+# ~ 1 minuto
 picard AddOrReplaceReadGroups \
     -I bams/LP220.sorted.bam \
     -O bams/LP220.sorted.rg.bam \
-    -RGID LP220-seq \
-    -RGLB protocolo1 \
-    -RGPL Illumina \
-    -RGPU LP220-seq-1 \
     -RGSM LP220 \
+    -RGLB LP220.lib1 \
+    -RGPL Illumina \
+    -RGPU flowcell1.lane1.barcode1 \
+    -RGID LP220_run1 \
     -VALIDATION_STRINGENCY SILENT
 
+# ~ 1 minuto
 picard AddOrReplaceReadGroups \
     -I bams/LL240.sorted.bam \
     -O bams/LL240.sorted.rg.bam \
-    -RGID LL240-seq \
-    -RGLB protocolo1 \
-    -RGPL Illumina \
-    -RGPU LL240-seq-1 \
     -RGSM LL240 \
+    -RGLB LL240.lib1 \
+    -RGPL Illumina \
+    -RGPU flowcell1.lane1.barcode2 \
+    -RGID LP240_run1 \
     -VALIDATION_STRINGENCY SILENT
 
 # para visualizar el grupo de lecturas en el cabecero:
@@ -196,10 +203,8 @@ samtools view -H bams/LP220.sorted.rg.bam
 samtools view -H bams/LL240.sorted.rg.bam
 ```
 
-IGV
+Para obtener un resumen de la calidad del alineamiento podemos usar una herramienta como QualiMap:
 
-
-----
 ```
 mkdir -m 777 qualimap
 
@@ -216,6 +221,7 @@ qualimap bamqc \
   -outformat html \
   -outdir qualimap/LL240
 ```
+
 ----
 
 ## Llamada de variantes
@@ -250,6 +256,7 @@ less -S vcfs/LL240.g.vcf
 Para juntar los GVCF de diferentes muestras y convertirlos al más compacto VCF usamos `gatk CombineGVCFs` y `gatk GenotypeGVCFs`:
 
 ```
+# ~1 minuto
 gatk CombineGVCFs \
     -R data/reference_sequence.fa \
     --variant vcfs/LP220.g.vcf \
@@ -258,6 +265,7 @@ gatk CombineGVCFs \
 
 less -S vcfs/LP220_LL240.g.vcf
 
+# ~1 minuto
 gatk GenotypeGVCFs \
     -R data/reference_sequence.fa \
     -V vcfs/LP220_LL240.g.vcf \
@@ -265,6 +273,8 @@ gatk GenotypeGVCFs \
 
 less -S vcfs/LP220_LL240.vcf
 ```
+
+----
 
 ## Filtrado de variantes
 
@@ -289,6 +299,9 @@ bedtools subtract -a vcfs/LP220_LL240.vcf -b data/repetitive_regions.bed -header
     uniq > vcfs/LP220_LL240.filter1.vcf
 
 less -S vcfs/LP220_LL240.filter1.vcf
+
+grep -v "#" vcfs/LP220_LL240.vcf | wc -l
+grep -v "#" vcfs/LP220_LL240.filter1.vcf | wc -l
 ```
 
 ### 2. variantes de un tipo particular que no vamos a analizar
@@ -332,7 +345,7 @@ Para eliminarlos podemos usar `bcftools view` pero ahora con `-e` para excluir l
 ```
 bcftools view -e 'INFO/AF=1.00' vcfs/LP220_LL240.filter2.recode.vcf > vcfs/LP220_LL240.filter3.vcf
 
-less -S vcfs/LP220_LL240.filter3.vcf
+grep -v "#" vcfs/LP220_LL240.filter3.vcf | wc -l
 ```
 
 Otras veces queremos eliminar los SNPs que tengan un valor por encima o por debajo de un umbral. Para decidir que valores tienen que tener esos umbrales puede ayudar dibujar su distribucción. Vamos a ver un ejemplo extrayendo los valores de [QD](https://gatk.broadinstitute.org/hc/en-us/articles/360037592191-QualByDepth) y [DP](https://gatk.broadinstitute.org/hc/en-us/articles/13832711528603-Coverage) de todos nuestros SNPs y luego vamos a decidir los umbrales a aplicar al filtrado basados en sus distribuciones.
@@ -389,7 +402,7 @@ ggsave(filename = "dp_plot.pdf", plot = dp_plot)
 
 
 # cuantos SNPs filtramos si aplicamos este valor como limite?
-dp_filter <- qd_dp.table[which(qd_dp.table$DP <= dp_lim), ]
+dp_filter <- qd_dp.table[which(qd_dp.table$DP > dp_lim), ]
 nrow(dp_filter)
 
 ####
