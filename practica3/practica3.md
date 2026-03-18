@@ -1,39 +1,16 @@
-Identificación de señales de selección positiva y análisis de
-enriquecimiento funcional
-================
-Lorena Lorenzo Fernández
-2024-05-09
+Identificación de señales de selección positiva y análisis de enriquecimiento funcional ================ Lorena Lorenzo Fernández 2024-05-09
 
 # Identificación de señales de selección positiva
 
-Imaginemos que estamos estudiando una especie rara de mariposas que se
-ha descrito recientemente, viven en una cordillera y parecen ocupar dos
-hábitats diferentes: una extensión agrícola y una pradera salvaje. Hemos
-podido observar que, pese a que las mariposas no presentan diferencias
-fenotípicas evidentes, las migraciones de la población salvaje a la
-agrícola son poco efectivas, ya que los individuos acaban muriendo o no
-se reproducen (reducción del fitness). Sospechamos que la selección
-puede estar detrás de esta reducción en el fitness, así que, para
-estudiar esta especie, hemos secuenciado a genoma completo 50 individuos
-de cada población.
+Imaginemos que estamos estudiando una especie rara de mariposas que se ha descrito recientemente, viven en una cordillera y parecen ocupar dos hábitats diferentes: una extensión agrícola y una pradera salvaje. Hemos podido observar que, pese a que las mariposas no presentan diferencias fenotípicas evidentes, las migraciones de la población salvaje a la agrícola son poco efectivas, ya que los individuos acaban muriendo o no se reproducen (reducción del fitness). Sospechamos que la selección puede estar detrás de esta reducción en el fitness, así que, para estudiar esta especie, hemos secuenciado a genoma completo 50 individuos de cada población.
 
-Para analizar si la selección positiva está actuando en estas
-poblaciones vamos a utilizar distintas aproximaciones con el objetivo de
-contrastar las señales y evitar falsos positivos. Estudiaremos la
-**diversidad a lo largo del genoma** de las poblaciones, después
-calcularemos el **Fst para medir diferenciación** y finalmente
-utilizaremos el **estadísitico iHS** para identificar regiones bajo
-selección.
+Para analizar si la selección positiva está actuando en estas poblaciones vamos a utilizar distintas aproximaciones con el objetivo de contrastar las señales y evitar falsos positivos. Estudiaremos la **diversidad a lo largo del genoma** de las poblaciones, después calcularemos el **Fst para medir diferenciación** y finalmente utilizaremos el **estadísitico iHS** para identificar regiones bajo selección.
 
-### Cálculo de diversidad (pi y Tajima’s D) y Fst de diferenciación
+### Cálculo de diversidad (pi y Tajima's D) y Fst de diferenciación
 
-Si recordamos de la teoría que vimos ayer, la señal que se observa en el
-genoma tras un evento de selección positiva es un barrido selectivo por
-arrastre de alelos cercanos a la mutación beneficiosa que resulta en una
-disminución de la diversidad génica alrededor de la mutación.
+Si recordamos de la teoría que vimos ayer, la señal que se observa en el genoma tras un evento de selección positiva es un barrido selectivo por arrastre de alelos cercanos a la mutación beneficiosa que resulta en una disminución de la diversidad génica alrededor de la mutación.
 
-Primero vamos a ver qué pinta tiene el vcf que contiene los SNPs de
-estas mariposas y a dividirlo por las dos poblaciones que tenemos.
+Primero vamos a ver qué pinta tiene el vcf que contiene los SNPs de estas mariposas y a dividirlo por las dos poblaciones que tenemos.
 
 ``` bash
 # move to the folder we are going to work today
@@ -57,10 +34,7 @@ vcftools --vcf $vcf_file --keep data/data_selection.pop2.txt \
     --recode --recode-INFO-all --out data/data_selection.pop2
 ```
 
-Ahora, calcularemos los valores de pi, Tajima’s D y Fst. Los dos
-primeros nos estiman la diversidad genética de cada población mientras
-que el valor de Fst nos mide la diferenciación entre poblaciones a lo
-largo del genoma.
+Ahora, calcularemos los valores de pi, Tajima's D y Fst. Los dos primeros nos estiman la diversidad genética de cada población mientras que el valor de Fst nos mide la diferenciación entre poblaciones a lo largo del genoma.
 
 ``` bash
 
@@ -86,9 +60,7 @@ vcftools --vcf $vcf_file \
     --out data/data_selection.pop1_vs_pop2    
 ```
 
-Una vez que tenemos el resultado de estos valores calculados para cada
-SNP, podemos observar en R cómo se ve cada distribución a lo largo del
-genoma de las dos poblaciones de mariposa.
+Una vez que tenemos el resultado de estos valores calculados para cada SNP, podemos observar en R cómo se ve cada distribución a lo largo del genoma de las dos poblaciones de mariposa.
 
 ``` r
 #Read the data
@@ -158,19 +130,13 @@ print(fst_plot)
 
 ### Cálculo de iHS (basado en EHH)
 
-Como ya hemos visto, iHS es un estadístico que mide la asimetría de la
-extensión de haplotipos en desequilibrio de ligamiento en dos
-direcciones opuestas (ancestral-derivado). Por lo tanto, cuanto mayor
-sea la diferencia entre las dos direcciones, mayor será el valor de iHS.
+Como ya hemos visto, iHS es un estadístico que mide la asimetría de la extensión de haplotipos en desequilibrio de ligamiento en dos direcciones opuestas (ancestral-derivado). Por lo tanto, cuanto mayor sea la diferencia entre las dos direcciones, mayor será el valor de iHS.
 
-En este caso, vamos a utilizar el paquete `rehh` para calcular iHS en
-las dos poblaciones y ver si hay señales de selección positiva en alguna
-de ellas.
+En este caso, vamos a utilizar el paquete `rehh` para calcular iHS en las dos poblaciones y ver si hay señales de selección positiva en alguna de ellas.
 
 Empezaremos cargando en R los datos que tenemos para cada población:
 
-Una vez que tenemos los datos para cada población, vamos a proceder a
-calcular iHS en cada una de las poblaciones.
+Una vez que tenemos los datos para cada población, vamos a proceder a calcular iHS en cada una de las poblaciones.
 
 ``` r
 #Scan the genome: this function calculates iHH (integrated EHH, area under EHH curve) and iES (integrated EHH per Site)for each SNP. 
@@ -180,9 +146,11 @@ scan_pop1 <- scan_hh(vcf_pop1)
 ihs_pop1 <- ihh2ihs(scan_pop1, freqbin=0.05 , min_maf=0)
 ```
 
-    ## Discard focal markers with Minor Allele Frequency equal to or below 0 .
-    ## 6863 markers discarded.
-    ## 18521 markers remaining.
+```         
+## Discard focal markers with Minor Allele Frequency equal to or below 0 .
+## 6863 markers discarded.
+## 18521 markers remaining.
+```
 
 ``` r
 #extract candidate SNPs 
@@ -209,9 +177,11 @@ scan_pop2 <- scan_hh(vcf_pop2)
 ihs_pop2 <- ihh2ihs(scan_pop2, freqbin=0.05 , min_maf=0)
 ```
 
-    ## Discard focal markers with Minor Allele Frequency equal to or below 0 .
-    ## 6001 markers discarded.
-    ## 19383 markers remaining.
+```         
+## Discard focal markers with Minor Allele Frequency equal to or below 0 .
+## 6001 markers discarded.
+## 19383 markers remaining.
+```
 
 ``` r
 #extract candidate SNPs
@@ -232,27 +202,13 @@ print(pop2)
 
 # Enriquecimiento funcional
 
-Si en lugar de tener una señal de selección particular tenemos muchos
-posibles outliers para nuestros análisis de selección a lo largo del
-genoma, estaremos buscando eventos de selección poligénica.
+Si en lugar de tener una señal de selección particular tenemos muchos posibles outliers para nuestros análisis de selección a lo largo del genoma, estaremos buscando eventos de selección poligénica.
 
-Por tanto, como comentamos ayer en la teoría, al cruzar nuestros
-outiliers con la anotación del genoma de referencia que estemos usando,
-tendremos una **lista de genes candidatos.** Con esto, podemos testar si
-en nuestra lista de genes hay **funciones representadas por exceso o por
-defecto** a lo que cabría esperar en una muestra aleatoria de genes.
+Por tanto, como comentamos ayer en la teoría, al cruzar nuestros outiliers con la anotación del genoma de referencia que estemos usando, tendremos una **lista de genes candidatos.** Con esto, podemos testar si en nuestra lista de genes hay **funciones representadas por exceso o por defecto** a lo que cabría esperar en una muestra aleatoria de genes.
 
-Para este ejercicio, supondremos que tenemos una lista de genes
-candidatos en lince ibérico mapeado al genoma del gato. Lo primero que
-tenemos que hacer es cargar desde ensembl nuestra anotación (Felis
-Catus) y extraer la información que vamos a necesitar (en nuestro caso
-el ensembl ID, gene name y GO ID.
+Para este ejercicio, supondremos que tenemos una lista de genes candidatos en lince ibérico mapeado al genoma del gato. Lo primero que tenemos que hacer es cargar desde ensembl nuestra anotación (Felis Catus) y extraer la información que vamos a necesitar (en nuestro caso el ensembl ID, gene name y GO ID.
 
-*Tened en cuenta que en los ordenadores del LAST, por la versión de R
-que manejan, no permiten usar el paquete bioMart para acceder a la base
-de datos de ensembl, por eso lo que vamos a hacer es guardar todos estos
-datos en un dataframe para que en caso de que no hayamos podido
-generarlos podamos utilizarlos igual.*
+*Tened en cuenta que en los ordenadores del LAST, por la versión de R que manejan, no permiten usar el paquete bioMart para acceder a la base de datos de ensembl, por eso lo que vamos a hacer es guardar todos estos datos en un dataframe para que en caso de que no hayamos podido generarlos podamos utilizarlos igual.*
 
 ``` r
 #####Get annotation from ensembl.org#####
@@ -266,9 +222,7 @@ ensembl_to_go <- getBM(attributes = c("ensembl_gene_id", "external_gene_name", "
 write.table(ensembl_to_go, file="data/felcat_annotation.csv", sep=",", row.names = F)
 ```
 
-Por tanto, si no hemos podido generar esa tabla con la información de la
-anotación del gato, podemos cargarla directamente ya que está disponible
-en los datos de la práctica 3 como `felcat_annotation.csv`.
+Por tanto, si no hemos podido generar esa tabla con la información de la anotación del gato, podemos cargarla directamente ya que está disponible en los datos de la práctica 3 como `felcat_annotation.csv`.
 
 ``` r
 # read emsembl data of Felcat annotation
@@ -284,10 +238,7 @@ genes <- read.csv("data/candidate_genes.csv")
 genes <- genes$x
 ```
 
-Una vez que tenemos las dos bases de datos que queremos comparar
-(nuestros genes candidatos y todos los genes de la anotación de nuestra
-especie), podemos proceder con el análisis de enriquecimiento funcional,
-para lo cual usaremos el paquete `topGO` .
+Una vez que tenemos las dos bases de datos que queremos comparar (nuestros genes candidatos y todos los genes de la anotación de nuestra especie), podemos proceder con el análisis de enriquecimiento funcional, para lo cual usaremos el paquete `topGO` .
 
 ``` r
 #cross the felcat annotation (ensembl_id with its GOterms) with my set of genes, to get a logical factor of true (if the gene is in the set) and false (if its not)
