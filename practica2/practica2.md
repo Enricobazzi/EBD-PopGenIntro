@@ -1,8 +1,6 @@
 # Analisis Preliminares de Estructura, Diversidad y Historia Demografica
 
-Con el objetivo de estudiar la historia de una especie, hemos muestreado cuatro regiones de una población de ... (A, B, C, D), extrayendo el ADN de 10 individuos de cada población.
-
-**IMAGEN RESUMEN MUESTREO**
+Hemos muestreado cuatro regiones de una población de aves (A, B, C, D), extrayendo el ADN de 10 individuos de cada punto. La población es una única unidad reproductiva o hay estructura poblacional? Cuantas unidades poblacionales parecen existir? Han tenido todas la misma historia demografica?
 
 ## Exploramos el VCF
 
@@ -35,7 +33,7 @@ grep -v "#" $VCF | wc -l
 
 ## Analisis de componentes principales (PCA)
 
-Si queremos explorar como están relacionados nuestros individuos, podemos empezar por una PCA basada en sus genotipos.
+Si queremos explorar como están relacionados nuestros individuos, podemos empezar por una PCA basada en sus genotipos. Esta es una forma no supervisada de analizar estructura poblacional.
 
 ```
 mkdir -m 777 pca
@@ -51,7 +49,7 @@ plink --vcf $VCF \
     --out data/data1.plink
 ```
 
-Esta función genera varios files `ls data/`:
+Esta función genera varios files `ls data/data1.plink*`:
 
 - data1.plink.log : contiene la información sobre el comando de plink que acabamos de correr
 - data/data1.plink.nosex : contiene la lista de individuos en nuestro análisis por los que no hay información de sexo (todos)
@@ -65,6 +63,8 @@ plink --vcf $VCF \
     --exclude data/data1.plink.prune.out \
     --pca 'header' \
     --out pca/data1.plink.pca
+  
+ls pca/data1.plink.pca*
 ```
 
 Esta función genera dos nuevos tipos de file:
@@ -76,6 +76,7 @@ Para visualizar estos resultados hemos preparados unos scripts de R:
 
 ```{r}
 library(ggplot2)
+library(ggrepel)
 
 # read eigenvalues
 eigenvals <- read.table("pca/data1.plink.pca.eigenval",
@@ -100,30 +101,43 @@ scree <- ggplot() +
 
 ggsave(filename = "pca/data1.scree_plot.pdf", plot = scree)
 
-# add the locations
-loc <- c(rep("A", 10), rep("B", 10), rep("C", 10), rep("D", 10))
+# add the samples and locations
+eigenvecs$loc <- sapply(strsplit(eigenvecs$IID, ""), `[`, 1)
 
 # plot!
-pc1pc2 <- ggplot() +
-  geom_point(data = eigenvecs,
-    aes(x = PC1, y = PC2, fill = loc),
-    shape = 21, size = 2.5) +
+pc1pc2 <- ggplot(
+  data = eigenvecs,
+  aes(x = PC1, y = PC2)
+  ) +
+  geom_point(
+    aes(fill = loc),
+    shape = 21, size = 4
+    ) +
+  geom_label_repel(
+    aes(label = IID),
+    size = 2, label.padding = unit(0.1, "lines")
+  ) +
   xlab(paste0("PC1 - ", round(percents[1], 2), "%")) +
   ylab(paste0("PC2 - ", round(percents[2], 2), "%")) +
   theme_bw()
-ggsave(filename = "pca/data1.pc1pc2_plot.pdf", plot = pc1pc2)
+ggsave(filename = "pca/data1.pc1pc2_plot.pdf", plot = pc1pc2, height = 7, width = 7)
 
-pc2pc3 <- ggplot() +
+pc3pc4 <- ggplot(
+  data = eigenvecs,
+  aes(x = PC3, y = PC4)
+  ) +
   geom_point(
-    data = eigenvecs,
-    aes(x = PC2, y = PC3, fill = loc),
-    shape = 21, size = 2.5
+    aes(fill = loc),
+    shape = 21, size = 4
     ) +
-  xlab(paste0("PC2 - ", round(percents[2], 2), "%")) +
-  ylab(paste0("PC3 - ", round(percents[3], 2), "%")) +
+  geom_label_repel(
+    aes(label = IID),
+    size = 2, label.padding = unit(0.1, "lines")
+  ) +
+  xlab(paste0("PC3 - ", round(percents[3], 2), "%")) +
+  ylab(paste0("PC4 - ", round(percents[4], 2), "%")) +
   theme_bw()
-ggsave(filename = "pca/data1.pc2pc3_plot.pdf", plot = pc2pc3)
-
+ggsave(filename = "pca/data1.pc3pc4_plot.pdf", plot = pc3pc4, height = 7, width = 7)
 ```
 
 ## Admixture para identificar unidades poblacionales
@@ -146,8 +160,8 @@ Ahora podemos correr ADMIXTURE con diferentes valores de K. Utilizamos [--cv]()
 mkdir -m 777 admixture 
 cd admixture
 
-# corremos admixture de K=1 a K=8
-for k in {1..8}; do
+# corremos admixture de K=2 a K=6
+for k in {2..6}; do
     echo "running admixture for K=${k}"
     admixture --cv ../data/data1.plink.bed ${k} \
         > log${k}.out
@@ -200,8 +214,8 @@ samples <- read.table("data/data1.plink.fam", sep = " ",
                       col.names = c("FID", "IID", "father",
                                     "mother", "sex", "pheno"))[2]
 
-# loop through k 2 to 8
-for (k in 2:8){
+# loop through k 2 to 6
+for (k in 2:6){
   # q values
   qvals <- read.table(paste0("admixture/data1.plink.", k, ".Q"),
                     col.names = paste0("Q",seq(1:k)))
@@ -216,6 +230,10 @@ for (k in 2:8){
          plot = admix_plot, width = 20, height = 5, units = "cm")
 }
 ```
+
+*Mini-discusión!*
+
+Cuántas poblaciones hay? Cómo interpretamos K=3 y K=4 en este sentido?
 
 ## Estadisticos de Diversidad Poblacionales
 
@@ -265,6 +283,8 @@ for (pop in pops){
   
   for (sample in samples){
     het <- sum(vcf[, sample] == "1|0" | vcf[, sample] == "0|1") / nrow(vcf)
+    # het <- sum(vcf[, sample] == "1|0" | vcf[, sample] == "0|1")
+
     sample_row <- data.frame(population = pop,
                              individual = sample, heterozygosity = het)
     pop_data <- rbind(pop_data, sample_row)
@@ -321,119 +341,58 @@ ggsave(filename = "stats/data1.tdplot.pdf", plot = tdplot)
 
 ## Análisis de tamaño efectivo
 
-Todo el software de GONE está contenido en la carpeta GONE-Linux. Para que pueda correr el programa tenemos que dar permiso de ejecución a todos los scripts dentro de su carpeta PROGRAMMES
+Todo el software de GONE está yá precompilado en un file que se llama `gone2`. Para que pueda correr el programa tenemos que dar permiso de ejecución:
 
 ```
-chmod +x GONE-Linux/PROGRAMMES/*
+chmod +x gone2
 ```
 
-Ahora, como vamos a correr el análisis en cada población del VCF, tenemos que extraer los individuos de `data1.big.vcf` creando un nuevo VCF para cada población:
-
-```
-VCF=data/data1.big.vcf
-
-for pop in A B C D; do
-    # creo una lista de individuos de la población
-    grep -m1 "#CHROM" $VCF | cut -f10- | tr "\t" "\n" | grep "${pop}" > data/population_big_${pop}.txt
-    
-    # uso vcftools para escribir un VCF de la población
-    vcftools --vcf $VCF --maf 0.001 --keep data/population_big_${pop}.txt \
-        --recode --out data/data1.big.population_${pop}
-done
-```
-
-Gone quiere que los datos estén en el formato PED/MAP de PLINK. Podemos convertir el VCF en un loop de nuevo:
+Vamos a correr el análisis utilizando el VCF "big" de cada población:
 
 ```
 for pop in A B C D; do
-    plink --vcf data/data1.big.population_${pop}.recode.vcf \
-        --recode \
-        --out GONE-Linux/data1.big.population_${pop}
+    ./gone2 \
+        -t 1 \
+        -g 2 \
+        -r 1 \
+        -o gone/${pop} \
+        data/data1.big.population_${pop}.recode.vcf
 done
-```
-
-Antes de correr GONE, tenemos que poner los parametros que queremos en el file `INPUT_PARAMETERS_FILE` de su carpeta. Vamos a verlo y vamos a cambiar los parametros a:
-
-########################################################
-
-PHASE=2 ### Phase = 0 (pseudohaploids), 1 (known phase), 2 (unknown phase)
-
-cMMb=1  ### CentiMorgans per Megabase (if distance is not available in map file).
-
-DIST=1  ### none (0), Haldane correction (1) or Kosambi correction (2)
-
-NGEN=2000 ### Number of generations for which linkage data is obtained in bins
-
-NBIN=400  ### Number of bins (e.g. if 400, each bin includes NGEN/NBIN = 2000/400 = 5 generations)
-
-MAF=0.0   ### Minor allele frequency (0-1) (recommended 0)
-
-ZERO=1    ### 0: Remove SNPs with zeroes (1: allow for them)
-
-maxNCHROM=-99  ### Maximum number of chromosomes to be analysed (-99 = all chromosomes; maximum number is 200)
-
-maxNSNP=10000 ### Maximum approx number of SNPs per chromosomes to be analysed (maximum number is 50000)
-
-hc=0.05   ### Maximum value of c analysed (recommended 0.05; maximum is 0.5)
-
-REPS=40   ### Number of replicates to run GONE (recommended 40)
-
-threads=-99  ### Number of threads (if -99 it uses all possible processors)
-
-###################################################################
-
-Ahora que tenemos todo podemos correr GONE para cada población yendo a la carpeta de GONE y corriendo el script `script_GONE.sh` pasandole el nombre del file PED/MAP con los datos por analizar:
-
-```
-cd GONE-Linux
-
-bash script_GONE.sh data1.big.population_A
-
-bash script_GONE.sh data1.big.population_B
-
-bash script_GONE.sh data1.big.population_C
-
-bash script_GONE.sh data1.big.population_D
 ```
 
 Tardará un poco a generar los resultados. Una vez terminado puedo plotear el tamaño efectivo a lo largo del tiempo a partir del file de salida `Output_Ne` generado por GONE:
 
 ```{r}
 library(ggplot2)
-library(tidyverse)
+library(dplyr)
 
-popA <- read.table("GONE-Linux/Output_Ne_data1.big.population_A",
-                   skip = 1, header = TRUE)
-
+popA <- read.table(paste0("gone/A_GONE2_Ne"),
+                   skip = 1, header = F, col.names = c("Generation", "Ne"))
 ggplot() +
   geom_step(data = popA %>% filter(Generation <= 100),
-            aes(x = Generation, y = Geometric_mean))
+            aes(x = Generation, y = Ne))
 ```
 
 ```{r}
-
-popB <- read.table("GONE-Linux/Output_Ne_data1.big.population_B",
-                   skip = 1, header = TRUE)
-
+popB <- read.table(paste0("gone/B_GONE2_Ne"),
+                   skip = 1, header = F, col.names = c("Generation", "Ne"))
 ggplot() +
   geom_step(data = popB %>% filter(Generation <= 100),
-            aes(x = Generation, y = Geometric_mean))
+            aes(x = Generation, y = Ne))
 ```
 
 ```{r}
-popC <- read.table("GONE-Linux/Output_Ne_data1.big.population_C",
-                   skip = 1, header = TRUE)
-
+popC <- read.table(paste0("gone/C_GONE2_Ne"),
+                   skip = 1, header = F, col.names = c("Generation", "Ne"))
 ggplot() +
-  geom_step(data = popC %>% filter(Generation <= 100),
-            aes(x = Generation, y = Geometric_mean))
+  geom_step(data = popC %>% filter(Generation > 5 & Generation <= 100),
+            aes(x = Generation, y = Ne))
 ```
 
 ```{r}
-popD <- read.table("GONE-Linux/Output_Ne_data1.big.population_D",
-                   skip = 1, header = TRUE)
-
+popD <- read.table(paste0("gone/D_GONE2_Ne"),
+                   skip = 1, header = F, col.names = c("Generation", "Ne"))
 ggplot() +
   geom_step(data = popD %>% filter(Generation <= 100),
-            aes(x = Generation, y = Geometric_mean))
+            aes(x = Generation, y = Ne))
 ```
