@@ -35,7 +35,7 @@ zcat data/LL240.R2.fq.gz | awk 'NR%4==1 {count++} END {print count}'
 Vamos a usar Fastqc para obtener un informe de calidad de nuestras lecturas:
 
 ```
-# creamos una carpeta para guardar los resultados
+# creamos una carpeta para guardar los resultados
 mkdir -m 777 fastqc
 
 # corremos fastqc para cada file de lecturas

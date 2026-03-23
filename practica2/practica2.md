@@ -363,7 +363,7 @@ for pop in A B C D; do
 done
 ```
 
-Tardará un poco a generar los resultados. Una vez terminado puedo plotear el tamaño efectivo a lo largo del tiempo a partir del file de salida `Output_Ne` generado por GONE:
+Tardará un poco a generar los resultados. Una vez terminado puedo plotear el tamaño efectivo a lo largo del tiempo a partir del file de salida `_GONE2_Ne` generado por GONE:
 
 ```{r}
 library(ggplot2)
@@ -371,31 +371,23 @@ library(dplyr)
 
 popA <- read.table(paste0("gone/A_GONE2_Ne"),
                    skip = 1, header = F, col.names = c("Generation", "Ne"))
-ggplot() +
-  geom_step(data = popA %>% filter(Generation <= 100),
-            aes(x = Generation, y = Ne))
-```
-
-```{r}
 popB <- read.table(paste0("gone/B_GONE2_Ne"),
                    skip = 1, header = F, col.names = c("Generation", "Ne"))
-ggplot() +
-  geom_step(data = popB %>% filter(Generation <= 100),
-            aes(x = Generation, y = Ne))
-```
-
-```{r}
 popC <- read.table(paste0("gone/C_GONE2_Ne"),
                    skip = 1, header = F, col.names = c("Generation", "Ne"))
-ggplot() +
-  geom_step(data = popC %>% filter(Generation > 5 & Generation <= 100),
-            aes(x = Generation, y = Ne))
-```
-
-```{r}
 popD <- read.table(paste0("gone/D_GONE2_Ne"),
                    skip = 1, header = F, col.names = c("Generation", "Ne"))
-ggplot() +
-  geom_step(data = popD %>% filter(Generation <= 100),
-            aes(x = Generation, y = Ne))
+  
+
+goneplot <- ggplot() +
+  geom_step(data = popA %>% filter(Generation > 5 & Generation <= 100),
+            aes(x = Generation, y = Ne), color = "red") +
+  geom_step(data = popB %>% filter(Generation > 5 & Generation <= 100),
+            aes(x = Generation, y = Ne), color = "darkgreen") +
+  geom_step(data = popC %>% filter(Generation > 5 & Generation <= 100),
+            aes(x = Generation, y = Ne), color = "blue") +
+  geom_step(data = popD %>% filter(Generation > 5 & Generation <= 100),
+            aes(x = Generation, y = Ne), color = "black")
+
+ggsave(filename = "gone/gone_plot.pdf", plot = goneplot)
 ```
