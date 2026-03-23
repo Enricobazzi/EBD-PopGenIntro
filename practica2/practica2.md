@@ -341,7 +341,10 @@ ggsave(filename = "stats/data1.tdplot.pdf", plot = tdplot)
 
 ## Análisis de tamaño efectivo
 
-Todo el software de GONE está yá precompilado en un file que se llama `gone2`. Para que pueda correr el programa tenemos que dar permiso de ejecución:
+Todo el software de GONE está yá precompilado en un file que se llama `gone2`. Lo descargamos desde aquí:
+https://github.com/esrud/GONE2/releases/tag/v1.0.2
+
+Para que pueda correr el programa tenemos que dar permiso de ejecución:
 
 ```
 chmod +x gone2
