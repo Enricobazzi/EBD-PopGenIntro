@@ -2,7 +2,7 @@ Identificación de señales de selección positiva y análisis de
 enriquecimiento funcional
 ================
 Lorena Lorenzo Fernández
-2024-05-09
+2026-03-26
 
 # Identificación de señales de selección positiva
 
@@ -51,10 +51,10 @@ grep -m1 "#CHROM" $vcf_file | cut -f10- | tr "\t" "\n" | head -100 | tail -50 > 
 
 # divide vcf per population
 vcftools --vcf $vcf_file --keep data/data_selection.pop1.txt \
-    --recode --recode-INFO-all --out data/data_selection.pop1
+    --maf 0.001 --recode --recode-INFO-all --out data/data_selection.pop1
 
 vcftools --vcf $vcf_file --keep data/data_selection.pop2.txt \
-    --recode --recode-INFO-all --out data/data_selection.pop2
+    --maf 0.001 --recode --recode-INFO-all --out data/data_selection.pop2
 ```
 
 Ahora, calcularemos los valores de pi, Tajima’s D y Fst. Los dos
@@ -177,12 +177,12 @@ calcular iHS en cada una de las poblaciones.
 scan_pop1 <- scan_hh(vcf_pop1)
 
 #Calculate iHS values 
-ihs_pop1 <- ihh2ihs(scan_pop1, freqbin=0.05 , min_maf=0)
+ihs_pop1 <- ihh2ihs(scan_pop1, freqbin=0.05)
 ```
 
-    ## Discard focal markers with Minor Allele Frequency equal to or below 0 .
-    ## 6863 markers discarded.
-    ## 18521 markers remaining.
+    ## Discard focal markers with Minor Allele Frequency equal to or below 0.05 .
+    ## 8721 markers discarded.
+    ## 9800 markers remaining.
 
 ``` r
 #extract candidate SNPs 
@@ -206,12 +206,12 @@ print(pop1)
 scan_pop2 <- scan_hh(vcf_pop2)
 
 #Calculate iHS values
-ihs_pop2 <- ihh2ihs(scan_pop2, freqbin=0.05 , min_maf=0)
+ihs_pop2 <- ihh2ihs(scan_pop2, freqbin=0.05)
 ```
 
-    ## Discard focal markers with Minor Allele Frequency equal to or below 0 .
-    ## 6001 markers discarded.
-    ## 19383 markers remaining.
+    ## Discard focal markers with Minor Allele Frequency equal to or below 0.05 .
+    ## 8933 markers discarded.
+    ## 10450 markers remaining.
 
 ``` r
 #extract candidate SNPs
@@ -232,12 +232,13 @@ print(pop2)
 
 # Enriquecimiento funcional
 
-Si en lugar de tener una señal de selección particular tenemos muchos
-posibles outliers para nuestros análisis de selección a lo largo del
-genoma, estaremos buscando eventos de selección poligénica.
+Si en lugar de tener una única señal de selección a lo largo del todo el
+genoma tenemos varios outliers de selección (picos), estaremos viendo
+señales múltiples de selección monogénica y/o eventos de selección
+poligénica.
 
 Por tanto, como comentamos ayer en la teoría, al cruzar nuestros
-outiliers con la anotación del genoma de referencia que estemos usando,
+outliers con la anotación del genoma de referencia que estemos usando,
 tendremos una **lista de genes candidatos.** Con esto, podemos testar si
 en nuestra lista de genes hay **funciones representadas por exceso o por
 defecto** a lo que cabría esperar en una muestra aleatoria de genes.
@@ -246,7 +247,7 @@ Para este ejercicio, supondremos que tenemos una lista de genes
 candidatos en lince ibérico mapeado al genoma del gato. Lo primero que
 tenemos que hacer es cargar desde ensembl nuestra anotación (Felis
 Catus) y extraer la información que vamos a necesitar (en nuestro caso
-el ensembl ID, gene name y GO ID.
+el ensembl ID, gene name y GO ID).
 
 *Tened en cuenta que en los ordenadores del LAST, por la versión de R
 que manejan, no permiten usar el paquete bioMart para acceder a la base
@@ -305,20 +306,21 @@ over_test <- runTest(godata, statistic = "fisher")
 # Comment: fisher test is based on gene counts while Kolmogorov-Smirnov is based on gene scores, which better fits transcriptomics studies
 
 # represent the results of the test in a table
-result_table <- GenTable(godata, Fisher=over_test, topNodes=over_test@geneData[2], numChar=1000) %>% 
+result_table <- GenTable(godata, Fisher=over_test, numChar=1000) %>% 
         as_tibble() %>% 
-        mutate(p.adj = round(p.adjust(as.numeric(gsub("<", "", Fisher)), method="BH"), 4), ontology= "BP") %>% 
-        filter(p.adj<0.05) 
+        #mutate(p.adj = round(p.adjust(as.numeric(gsub("<", "", Fisher)), method="BH"), 4), ontology= "BP")
+        filter(Fisher<0.05)                
 ```
 
-| GO.ID        | Term                                             | Annotated | Significant | Expected | Fisher |  p.adj | ontology |
-|:-------------|:-------------------------------------------------|----------:|------------:|---------:|:-------|-------:|:---------|
-| <GO:0051607> | defense response to virus                        |       211 |          11 |     1.47 | 1e-06  | 0.0001 | BP       |
-| <GO:0080111> | DNA demethylation                                |        21 |           3 |     0.15 | 0.0004 | 0.0186 | BP       |
-| <GO:0045071> | negative regulation of viral genome replication  |        34 |           3 |     0.24 | 0.0017 | 0.0465 | BP       |
-| <GO:0097152> | mesenchymal cell apoptotic process               |        10 |           2 |     0.07 | 0.0021 | 0.0465 | BP       |
-| <GO:0060337> | type I interferon-mediated signaling pathway     |        47 |           3 |     0.33 | 0.0030 | 0.0465 | BP       |
-| <GO:0006177> | GMP biosynthetic process                         |        12 |           2 |     0.08 | 0.0030 | 0.0465 | BP       |
-| <GO:0070131> | positive regulation of mitochondrial translation |        14 |           2 |     0.10 | 0.0041 | 0.0496 | BP       |
-| <GO:0030202> | heparin metabolic process                        |        15 |           2 |     0.10 | 0.0048 | 0.0496 | BP       |
-| <GO:0035458> | cellular response to interferon-beta             |        15 |           2 |     0.10 | 0.0048 | 0.0496 | BP       |
+| GO.ID | Term | Annotated | Significant | Expected | Fisher |
+|:---|:---|---:|---:|---:|:---|
+| <GO:0051607> | defense response to virus | 227 | 9 | 1.50 | 0.00066 |
+| <GO:0006177> | GMP biosynthetic process | 12 | 2 | 0.08 | 0.00273 |
+| <GO:0030202> | heparin metabolic process | 15 | 2 | 0.10 | 0.00429 |
+| <GO:0060337> | type I interferon-mediated signaling pathway | 54 | 3 | 0.36 | 0.00747 |
+| <GO:0006357> | regulation of transcription by RNA polymerase II | 1603 | 19 | 10.60 | 0.00836 |
+| <GO:2000036> | regulation of stem cell population maintenance | 24 | 2 | 0.16 | 0.01086 |
+| <GO:0006024> | glycosaminoglycan biosynthetic process | 28 | 2 | 0.19 | 0.01462 |
+| <GO:0045071> | negative regulation of viral genome replication | 30 | 2 | 0.20 | 0.01668 |
+| <GO:0045815> | transcription initiation-coupled chromatin remodeling | 38 | 2 | 0.25 | 0.02606 |
+| <GO:1903320> | regulation of protein modification by small protein conjugation or removal | 152 | 3 | 1.01 | 0.03225 |

@@ -47,10 +47,10 @@ grep -m1 "#CHROM" $vcf_file | cut -f10- | tr "\t" "\n" | head -100 | tail -50 > 
 
 # divide vcf per population
 vcftools --vcf $vcf_file --keep data/data_selection.pop1.txt \
-    --recode --recode-INFO-all --out data/data_selection.pop1
+    --maf 0.001 --recode --recode-INFO-all --out data/data_selection.pop1
 
 vcftools --vcf $vcf_file --keep data/data_selection.pop2.txt \
-    --recode --recode-INFO-all --out data/data_selection.pop2
+    --maf 0.001 --recode --recode-INFO-all --out data/data_selection.pop2
 ```
 
 Ahora, calcularemos los valores de pi, Tajima's D y Fst. Los dos primeros nos estiman la diversidad genética de cada población mientras que el valor de Fst nos mide la diferenciación entre poblaciones a lo largo del genoma.
@@ -165,7 +165,7 @@ Una vez que tenemos los datos para cada población, vamos a proceder a calcular 
 scan_pop1 <- scan_hh(vcf_pop1)
 
 #Calculate iHS values 
-ihs_pop1 <- ihh2ihs(scan_pop1, freqbin=0.05 , min_maf=0)
+ihs_pop1 <- ihh2ihs(scan_pop1, freqbin=0.05)
 
 #extract candidate SNPs 
 ihs_val_pop1 <- ihs_pop1$ihs %>% na.omit() 
@@ -186,7 +186,7 @@ print(pop1)
 scan_pop2 <- scan_hh(vcf_pop2)
 
 #Calculate iHS values
-ihs_pop2 <- ihh2ihs(scan_pop2, freqbin=0.05 , min_maf=0)
+ihs_pop2 <- ihh2ihs(scan_pop2, freqbin=0.05)
 
 #extract candidate SNPs
 ihs_val_pop2 <- ihs_pop2$ihs %>% na.omit()
@@ -204,11 +204,11 @@ print(pop2)
 
 # Enriquecimiento funcional
 
-Si en lugar de tener una señal de selección particular tenemos muchos posibles outliers para nuestros análisis de selección a lo largo del genoma, estaremos buscando eventos de selección poligénica.
+Si en lugar de tener una única señal de selección a lo largo del todo el genoma tenemos varios outliers de selección (picos), estaremos viendo señales múltiples de selección monogénica y/o eventos de selección poligénica.
 
-Por tanto, como comentamos ayer en la teoría, al cruzar nuestros outiliers con la anotación del genoma de referencia que estemos usando, tendremos una **lista de genes candidatos.** Con esto, podemos testar si en nuestra lista de genes hay **funciones representadas por exceso o por defecto** a lo que cabría esperar en una muestra aleatoria de genes.
+Por tanto, como comentamos ayer en la teoría, al cruzar nuestros outliers con la anotación del genoma de referencia que estemos usando, tendremos una **lista de genes candidatos.** Con esto, podemos testar si en nuestra lista de genes hay **funciones representadas por exceso o por defecto** a lo que cabría esperar en una muestra aleatoria de genes.
 
-Para este ejercicio, supondremos que tenemos una lista de genes candidatos en lince ibérico mapeado al genoma del gato. Lo primero que tenemos que hacer es cargar desde ensembl nuestra anotación (Felis Catus) y extraer la información que vamos a necesitar (en nuestro caso el ensembl ID, gene name y GO ID.
+Para este ejercicio, supondremos que tenemos una lista de genes candidatos en lince ibérico mapeado al genoma del gato. Lo primero que tenemos que hacer es cargar desde ensembl nuestra anotación (Felis Catus) y extraer la información que vamos a necesitar (en nuestro caso el ensembl ID, gene name y GO ID).
 
 *Tened en cuenta que en los ordenadores del LAST, por la versión de R que manejan, no permiten usar el paquete bioMart para acceder a la base de datos de ensembl, por eso lo que vamos a hacer es guardar todos estos datos en un dataframe para que en caso de que no hayamos podido generarlos podamos utilizarlos igual.*
 
@@ -259,10 +259,10 @@ over_test <- runTest(godata, statistic = "fisher")
 # Comment: fisher test is based on gene counts while Kolmogorov-Smirnov is based on gene scores, which better fits transcriptomics studies
 
 # represent the results of the test in a table
-result_table <- GenTable(godata, Fisher=over_test, topNodes=over_test@geneData[2], numChar=1000) %>% 
+result_table <- GenTable(godata, Fisher=over_test, numChar=1000) %>% 
         as_tibble() %>% 
-        mutate(p.adj = round(p.adjust(as.numeric(gsub("<", "", Fisher)), method="BH"), 4), ontology= "BP") %>% 
-        filter(p.adj<0.05) 
+        #mutate(p.adj = round(p.adjust(as.numeric(gsub("<", "", Fisher)), method="BH"), 4), ontology= "BP")
+        filter(Fisher<0.05)                
 ```
 
 ```{r echo=FALSE}
